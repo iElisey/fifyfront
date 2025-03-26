@@ -2,6 +2,23 @@
   <v-container>
     <v-card class="pa-5">
       <v-card-title class="text-h5">Word List</v-card-title>
+      <!-- Форма для масового введення слів -->
+      <v-form @submit.prevent="addWordsFromInput">
+        <v-row>
+          <v-col cols="10">
+            <v-textarea
+                v-model="bulkWords"
+                label="Enter words (e.g., eng=ukr=topic)"
+                outlined
+                dense
+                placeholder="apple=яблуко=food"
+            ></v-textarea>
+          </v-col>
+          <v-col cols="2">
+            <v-btn color="primary" @click="addWordsFromInput" block> Add Bulk </v-btn>
+          </v-col>
+        </v-row>
+      </v-form>
 
       <!-- Форма добавления -->
       <v-form @submit.prevent="addWord">
@@ -44,6 +61,8 @@
       </template>
       <template v-slot:[`item.ukrainian`]="{ item }">
         <v-text-field v-model="item.ukrainian" dense></v-text-field>
+      </template><template v-slot:[`item.topic`]="{ item }">
+        <v-text-field v-model="item.topic" dense></v-text-field>
       </template>
       <template v-slot:[`item.actions`]="{ item }">
         <v-btn color="green" icon @click="updateWord(item)">
@@ -67,15 +86,45 @@ export default {
       words: [],
       url: "https://fify-hhc6asgfhsctg0hj.francecentral-01.azurewebsites.net",
       newWord: { english: "", ukrainian: "" },
+      bulkWords: "", // Нове поле для масового введення
+
       headers: [
         { text: "ID", value: "id", align: "start", sortable: true }, // Добавляем sortable
         { text: "English", value: "english" },
         { text: "Ukrainian", value: "ukrainian" },
+        { text: "Topic", value: "topic" },
         { text: "Actions", value: "actions", align: "center", sortable: false },
       ],
     };
   },
   methods: {
+    async addWordsFromInput() {
+      if (!this.bulkWords) return;
+
+      // Розбиваємо введений текст на рядки (дозволяємо кілька слів через перенос рядка)
+      const lines = this.bulkWords.split("\n").filter(line => line.trim() !== "");
+      const wordList = lines.map(line => {
+        const [english, ukrainian, topic] = line.split("=");
+        return {
+          english: english?.trim() || "",
+          ukrainian: ukrainian?.trim() || "",
+          topic: topic?.trim() || "other" // Якщо теми немає, ставимо "other"
+        };
+      }).filter(word => word.english && word.ukrainian); // Фільтруємо некоректні записи
+
+      if (wordList.length === 0) {
+        console.error("No valid words to add");
+        return;
+      }
+
+      try {
+        await axios.post(`${this.url}/api/words`, wordList); // Відправляємо список слів
+        this.bulkWords = ""; // Очищаємо поле
+        this.fetchWords(); // Оновлюємо таблицю
+      } catch (error) {
+        console.error("Error adding bulk words:", error);
+      }
+    },
     async fetchWords() {
       try {
         const response = await axios.get(`${this.url}/api`);
