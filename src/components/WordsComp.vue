@@ -5,37 +5,49 @@
       <v-card>
         <v-card-title class="text-h5">Access Blocked</v-card-title>
         <v-card-text>
-          <p>You have exceeded the maximum number of password attempts. Your IP is blocked.</p>
+          <p>You have exceeded the maximum number of login attempts. Your IP is blocked.</p>
         </v-card-text>
       </v-card>
     </v-dialog>
 
-    <!-- Діалог для введення пароля -->
+    <!-- Діалог для введення імені користувача та пароля -->
     <v-dialog v-if="!isBlocked" v-model="showPasswordDialog" persistent max-width="400px">
       <v-card>
-        <v-card-title class="text-h5">Enter Password</v-card-title>
+        <v-card-title class="text-h5">Login</v-card-title>
         <v-card-text>
+          <v-text-field
+              v-model="usernameInput"
+              label="Username"
+              outlined
+              @keyup.enter="focusPassword"
+              autofocus
+          ></v-text-field>
           <v-text-field
               v-model="passwordInput"
               label="Password"
               type="password"
               outlined
-              @keyup.enter="checkPassword"
-              autofocus
+              ref="passwordField"
+              @keyup.enter="checkCredentials"
           ></v-text-field>
-          <v-alert v-if="passwordError" type="error" dense>
-            Incorrect password. Attempts left: {{ 3 - passwordAttempts }}
+          <v-alert v-if="loginError" type="error" dense>
+            Incorrect username or password. Attempts left: {{ 3 - loginAttempts }}
           </v-alert>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" @click="checkPassword" block>Submit</v-btn>
+          <v-btn color="primary" @click="checkCredentials" block>Submit</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Основний вміст, доступний після введення пароля -->
+    <!-- Основний вміст, доступний після введення правильних даних -->
     <v-container v-if="isAuthenticated" fluid>
-
+      <!-- Кнопка для запуску тесту перед таблицею -->
+      <v-row justify="center" class="mb-4">
+        <v-btn color="primary" @click="openTestDialog" large>
+          <v-icon left>mdi-play</v-icon> Start Test
+        </v-btn>
+      </v-row>
 
       <!-- Діалог для тестів -->
       <v-dialog v-model="testDialog" max-width="600px" :fullscreen="$vuetify.breakpoint.xs" persistent>
@@ -172,7 +184,15 @@
       <!-- Секція для списку слів -->
       <v-card class="pa-5 clean-card">
         <v-card-title class="text-h5">Word List</v-card-title>
-
+        <!-- Поле пошуку -->
+        <v-text-field
+            v-model="searchQuery"
+            label="Search words"
+            outlined
+            prepend-inner-icon="mdi-magnify"
+            clearable
+            class="mb-4"
+        ></v-text-field>
 
         <v-form @submit.prevent="addWordsFromInput">
           <v-row>
@@ -207,21 +227,7 @@
             </v-col>
           </v-row>
         </v-form>
-        <!-- Кнопка для запуску тесту перед таблицею -->
-        <v-row justify="center" class="mb-2">
-          <v-btn color="primary" @click="openTestDialog" large>
-            <v-icon left>mdi-play</v-icon> Start Test
-          </v-btn>
-        </v-row>
-        <!-- Поле пошуку -->
-        <v-text-field
-            v-model="searchQuery"
-            label="Search words"
-            outlined
-            prepend-inner-icon="mdi-magnify"
-            clearable
-            class="mt-4 mb-2"
-        ></v-text-field>
+
         <v-data-table
             :headers="headers"
             :items="filteredWordsList"
@@ -258,13 +264,15 @@ import axios from "axios";
 export default {
   data() {
     return {
-      // Стан для пароля та блокування
+      // Стан для автентифікації та блокування
       showPasswordDialog: true,
+      usernameInput: "",
       passwordInput: "",
-      passwordError: false,
+      loginError: false,
       isAuthenticated: false,
+      correctUsername: "eloseng",
       correctPassword: "7777",
-      passwordAttempts: 0,
+      loginAttempts: 0,
       userIP: "",
       isBlocked: false,
       blockedIPs: [],
@@ -352,18 +360,22 @@ export default {
       this.isBlocked = true;
       this.showPasswordDialog = false;
     },
-    checkPassword() {
-      if (this.passwordInput === this.correctPassword) {
+    focusPassword() {
+      this.$refs.passwordField.focus(); // Переміщуємо фокус на поле пароля
+    },
+    checkCredentials() {
+      if (this.usernameInput === this.correctUsername && this.passwordInput === this.correctPassword) {
         this.isAuthenticated = true;
         this.showPasswordDialog = false;
-        this.passwordError = false;
-        this.passwordAttempts = 0;
+        this.loginError = false;
+        this.loginAttempts = 0;
         this.fetchWords(); // Завантажуємо слова після автентифікації
       } else {
-        this.passwordAttempts++;
-        this.passwordError = true;
+        this.loginAttempts++;
+        this.loginError = true;
         this.passwordInput = "";
-        if (this.passwordAttempts >= 3) {
+        this.usernameInput = "";
+        if (this.loginAttempts >= 3) {
           this.blockIP();
         }
       }
