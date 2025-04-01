@@ -264,20 +264,18 @@ import axios from "axios";
 export default {
   data() {
     return {
-      // Стан для автентифікації та блокування
+      // Authentication and blocking state
       showPasswordDialog: true,
       usernameInput: "",
       passwordInput: "",
       loginError: false,
       isAuthenticated: false,
-      correctUsername: "eloseng",
-      correctPassword: "7777",
       loginAttempts: 0,
       userIP: "",
       isBlocked: false,
       blockedIPs: [],
 
-      // Основні дані додатку
+      // Main app data
       words: [],
       url: "https://fify-hhc6asgfhsctg0hj.francecentral-01.azurewebsites.net",
       newWord: { english: "", ukrainian: "", topic: "" },
@@ -342,7 +340,7 @@ export default {
         this.checkIfBlocked();
       } catch (error) {
         console.error("Error fetching IP:", error);
-        this.userIP = "unknown"; // Запасний варіант у разі помилки
+        this.userIP = "unknown";
         this.checkIfBlocked();
       }
     },
@@ -361,20 +359,35 @@ export default {
       this.showPasswordDialog = false;
     },
     focusPassword() {
-      this.$refs.passwordField.focus(); // Переміщуємо фокус на поле пароля
+      this.$refs.passwordField.focus();
     },
-    checkCredentials() {
-      if (this.usernameInput === this.correctUsername && this.passwordInput === this.correctPassword) {
-        this.isAuthenticated = true;
-        this.showPasswordDialog = false;
-        this.loginError = false;
-        this.loginAttempts = 0;
-        this.fetchWords(); // Завантажуємо слова після автентифікації
-      } else {
-        this.loginAttempts++;
+    async checkCredentials() {
+      try {
+        const response = await axios.post(`${this.url}/api/login`, {
+          username: this.usernameInput,
+          password: this.passwordInput,
+          ip: this.userIP,
+        });
+
+        if (response.data.success) {
+          this.isAuthenticated = true;
+          this.showPasswordDialog = false;
+          this.loginError = false;
+          this.loginAttempts = 0;
+          this.fetchWords(); // Load words after successful login
+        } else {
+          this.loginAttempts++;
+          this.loginError = true;
+          this.passwordInput = "";
+          this.usernameInput = "";
+          if (this.loginAttempts >= 3) {
+            this.blockIP();
+          }
+        }
+      } catch (error) {
+        console.error("Login error:", error);
         this.loginError = true;
-        this.passwordInput = "";
-        this.usernameInput = "";
+        this.loginAttempts++;
         if (this.loginAttempts >= 3) {
           this.blockIP();
         }
@@ -592,7 +605,7 @@ export default {
     },
   },
   mounted() {
-    this.fetchUserIP(); // Отримуємо IP при завантаженні
+    this.fetchUserIP(); // Fetch IP on load
   },
 };
 </script>
