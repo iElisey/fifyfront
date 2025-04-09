@@ -221,8 +221,6 @@
             </v-col>
             <v-col cols="12" sm="2">
               <v-text-field v-model="newWord.topic" label="Topic" outlined></v-text-field>
-            </v-col><v-col cols="12" sm="2">
-              <v-text-field v-model="newWord.created_at" label="Created at" outlined></v-text-field>
             </v-col>
             <v-col cols="12" sm="2">
               <v-btn color="primary" @click="addWord" block large>Add</v-btn>
@@ -245,6 +243,12 @@
           </template>
           <template v-slot:[`item.topic`]="{ item }">
             <v-text-field v-model="item.topic" dense></v-text-field>
+          </template>
+          <template v-slot:[`item.createdAt`]="{ item }">
+            <v-text-field
+                v-model="item.createdAt"
+                :value="formatDate(item.createdAt)"
+            dense></v-text-field>
           </template>
           <template v-slot:[`item.actions`]="{ item }">
             <v-btn color="success" icon @click="updateWord(item)">
@@ -308,11 +312,13 @@ export default {
         { text: "English", value: "english" },
         { text: "Ukrainian", value: "ukrainian" },
         { text: "Topic", value: "topic" },
+        { text: "Created at", value: "createdAt" },
         { text: "Actions", value: "actions", align: "center", sortable: false },
       ],
     };
   },
   computed: {
+
     uniqueTopics() {
       const topics = this.words.map((word) => word.topic).filter(Boolean);
       return [...new Set(topics)];
@@ -334,6 +340,15 @@ export default {
     },
   },
   methods: {
+    formatDate(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      return d.toLocaleDateString('uk-UA', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    },
     async fetchUserIP() {
       try {
         const response = await fetch("https://api.ipify.org?format=json");
@@ -421,6 +436,8 @@ export default {
       try {
         const response = await axios.get(`${this.url}/api`);
         this.words = response.data;
+
+        console.log(this.words[1436], this.words[1435])
       } catch (error) {
         console.error("Error fetching words:", error);
       }
