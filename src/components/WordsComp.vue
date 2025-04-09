@@ -221,6 +221,8 @@
             </v-col>
             <v-col cols="12" sm="2">
               <v-text-field v-model="newWord.topic" label="Topic" outlined></v-text-field>
+            </v-col><v-col cols="12" sm="2">
+              <v-text-field v-model="newWord.created_at" label="Created at" outlined></v-text-field>
             </v-col>
             <v-col cols="12" sm="2">
               <v-btn color="primary" @click="addWord" block large>Add</v-btn>
