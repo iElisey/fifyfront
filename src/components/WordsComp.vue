@@ -283,7 +283,7 @@ export default {
 
       // Main app data
       words: [],
-      url: "https://fify-hhc6asgfhsctg0hj.francecentral-01.azurewebsites.net",
+      url: "https://fify-apczhagud0dyedbm.polandcentral-01.azurewebsites.net",
       newWord: { english: "", ukrainian: "", topic: "" },
       bulkWords: "",
       searchQuery: "",
